@@ -7,22 +7,22 @@ Runs [aws sso login]() headlessly when using the `--no-browser` option.
 
 We want to avoid leaving the terminal and opening yet another tab and having to click Next next next...
 
-### Installation and Usage:
+### Install
 
-Install `headless-sso` package via: 
 ```bash
 go install github.com/mziyabo/headless-sso@latest
 ```
 
-Usage:
+### Usage:
 
 ``` bash
 aws sso login  --profile pp --no-browser | headless-sso
 ```
 
-**Note:** headless-sso gets the AWS user credentials from a `.netrc` file with the following format:
 
-> machine name has to be `headless-sso`
+
+**Note:** `headless-sso` gets the AWS user credentials from a `.netrc` file with the following format:
+ > machine name has to be `headless-sso`
 
 ```
 machine headless-sso
@@ -32,8 +32,8 @@ password <something-secret>
 
 
 ### Known Issues:
-- Only works with hardware MFA/u2f - Need to read MFA code from stdin.
-- Occasionally contexts failure - Error handling needs work
+- Only works with hardware MFA/U2F - Need to read MFA code from stdin.
+- Occasional context failures - Error handling needs work
 
 ### Release Notes:
 Working but Still WiP, Contributions welcome.
