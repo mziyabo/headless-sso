@@ -18,22 +18,23 @@ import (
 	"github.com/go-rod/rod/lib/input"
 )
 
+// Time before MFA step times out
 const MFA_TIMEOUT = 30
 
 func main() {
 
 	// fetch url from stdin
-	url := get_url()
+	url := getURL()
 	color.Cyan(url)
 
 	// login headlessly
-	sso_login(url)
+	ssoLogin(url)
 	time.Sleep(1 * time.Second)
 }
 
 // TODO: time this operation out before `aws sso login`` times out
 // returns sso url from stdin.
-func get_url() string {
+func getURL() string {
 	scanner := bufio.NewScanner(os.Stdin)
 	url := ""
 	for url == "" {
@@ -54,7 +55,7 @@ func get_url() string {
 // NOTE:
 // There are two paths but we always go with the you're not authenticated one :(, we can make it faster somehow
 // login with U2f MFA
-func sso_login(url string) {
+func ssoLogin(url string) {
 
 	browser := rod.New().
 		MustConnect().
@@ -71,11 +72,11 @@ func sso_login(url string) {
 		log.Println(page.MustInfo().Title)
 
 		// sign-in
-		signin(*page)
+		signIn(*page)
 
 		// TODO: detect if u2f or requires user to type authkey
 		// mfa required step
-		ssomfa(*page)
+		mfa(*page)
 
 		// allow request
 		unauthorized := true
@@ -104,7 +105,7 @@ func sso_login(url string) {
 }
 
 // executes aws sso signin step
-func signin(page rod.Page) {
+func signIn(page rod.Page) {
 
 	usr, _ := user.Current()
 	f, _ := netrc.ParseFile(filepath.Join(usr.HomeDir, ".netrc"))
@@ -120,7 +121,7 @@ func signin(page rod.Page) {
 // TODO: allow user to enter MFA Code
 // We only support u2f/hardware MFA right now
 // And if you park here, stuff just fails eventually...
-func ssomfa(page rod.Page) {
+func mfa(page rod.Page) {
 
 	// we used a page.Race here before but we can't read from stdin after the initial pipe
 	log.Println("Touch U2f...")
