@@ -32,7 +32,7 @@ func main() {
 
 	// login headlessly
 	ssoLogin(url)
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 }
 
 // returns sso url from stdin.
