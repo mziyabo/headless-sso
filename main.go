@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"context"
+	b64 "encoding/base64"
+	"encoding/json"
 	"errors"
 	"log"
 	"os"
@@ -16,6 +18,7 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/input"
+	"github.com/go-rod/rod/lib/proto"
 )
 
 // Time before MFA step times out
@@ -29,10 +32,9 @@ func main() {
 
 	// login headlessly
 	ssoLogin(url)
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 }
 
-// TODO: time this operation out before `aws sso login`` times out
 // returns sso url from stdin.
 func getURL() string {
 	scanner := bufio.NewScanner(os.Stdin)
@@ -52,14 +54,15 @@ func getURL() string {
 }
 
 // TODO: handle other MFA
-// NOTE:
-// There are two paths but we always go with the you're not authenticated one :(, we can make it faster somehow
 // login with U2f MFA
 func ssoLogin(url string) {
 
 	browser := rod.New().
 		MustConnect().
 		Trace(false)
+
+	// load cookies
+	loadCookies(*browser)
 
 	defer browser.MustClose()
 
@@ -72,11 +75,13 @@ func ssoLogin(url string) {
 		log.Println(page.MustInfo().Title)
 
 		// sign-in
-		signIn(*page)
+		page.Race().ElementR("button", "Allow").MustHandle(func(e *rod.Element) {
+		}).Element("#awsui-input-0").MustHandle(func(e *rod.Element) {
+			signIn(*page)
 
-		// TODO: detect if u2f or requires user to type authkey
-		// mfa required step
-		mfa(*page)
+			// mfa required step
+			mfa(*page)
+		}).MustDo()
 
 		// allow request
 		unauthorized := true
@@ -91,10 +96,13 @@ func ssoLogin(url string) {
 				if exists {
 					page.MustWaitLoad().MustElementR("button", "Allow").MustClick()
 				}
-				//page.MustWaitLoad()
-				time.Sleep(100 * time.Millisecond)
+
+				time.Sleep(500 * time.Millisecond)
 			}
 		}
+
+		// save cookies
+		saveCookies(*browser)
 	})
 
 	if errors.Is(err, context.DeadlineExceeded) {
@@ -124,4 +132,47 @@ func mfa(page rod.Page) {
 
 	// we used a page.Race here before but we can't read from stdin after the initial pipe
 	log.Println("Touch U2f...")
+}
+
+// load cookies
+func loadCookies(browser rod.Browser) {
+	dirname, err := os.UserHomeDir()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	data, _ := os.ReadFile(dirname + "/.headless-sso")
+	sEnc, _ := b64.StdEncoding.DecodeString(string(data))
+	var cookie *proto.NetworkCookie
+	json.Unmarshal(sEnc, &cookie)
+
+	if cookie != nil {
+		browser.MustSetCookies(cookie)
+	}
+}
+
+// save auth cookie
+func saveCookies(browser rod.Browser) {
+	dirname, err := os.UserHomeDir()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	cookies := (browser.MustGetCookies())
+
+	for _, cookie := range cookies {
+		if cookie.Name == "x-amz-sso_authn" {
+
+			data, _ := json.Marshal(cookie)
+
+			sEnc := b64.StdEncoding.EncodeToString([]byte(data))
+			err = os.WriteFile(dirname+"/.headless-sso", []byte(sEnc), 0644)
+
+			if err != nil {
+				log.Panic(err)
+			}
+
+			break
+		}
+	}
 }
