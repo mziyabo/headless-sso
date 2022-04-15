@@ -29,7 +29,7 @@ func main() {
 
 	// login headlessly
 	ssoLogin(url)
-	time.Sleep(1 * time.Second)
+	time.Sleep(100 * time.Millisecond)
 }
 
 // TODO: time this operation out before `aws sso login`` times out
@@ -92,7 +92,7 @@ func ssoLogin(url string) {
 					page.MustWaitLoad().MustElementR("button", "Allow").MustClick()
 				}
 				//page.MustWaitLoad()
-				time.Sleep(1 * time.Second)
+				time.Sleep(100 * time.Millisecond)
 			}
 		}
 	})
@@ -109,11 +109,10 @@ func signIn(page rod.Page) {
 
 	usr, _ := user.Current()
 	f, _ := netrc.ParseFile(filepath.Join(usr.HomeDir, ".netrc"))
-
 	username := f.FindMachine("headless-sso", "").Login
-	page.MustElement("#awsui-input-0").MustInput(username).MustPress(input.Enter)
-
 	passphrase := f.FindMachine("headless-sso", "").Password
+
+	page.MustElement("#awsui-input-0").MustInput(username).MustPress(input.Enter)
 	page.MustElement("#awsui-input-1").MustInput(passphrase).MustPress(input.Enter)
 	log.Println(page.MustInfo().Title)
 }
