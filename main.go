@@ -42,7 +42,6 @@ func getURL() string {
 	for url == "" {
 		scanner.Scan()
 		t := scanner.Text()
-		// NOTE: adapted from bash: egrep "^https://.*\user_code=([A-Z]{4}-?){2}"
 		r, _ := regexp.Compile("^https.*user_code=([A-Z]{4}-?){2}")
 
 		if r.MatchString(t) {
@@ -53,7 +52,6 @@ func getURL() string {
 	return url
 }
 
-// TODO: handle other MFA
 // login with U2f MFA
 func ssoLogin(url string) {
 
@@ -61,7 +59,6 @@ func ssoLogin(url string) {
 		MustConnect().
 		Trace(false)
 
-	// load cookies
 	loadCookies(*browser)
 
 	defer browser.MustClose()
@@ -101,7 +98,6 @@ func ssoLogin(url string) {
 			}
 		}
 
-		// save cookies
 		saveCookies(*browser)
 	})
 
@@ -151,7 +147,7 @@ func loadCookies(browser rod.Browser) {
 	}
 }
 
-// save auth cookie
+// save authn cookie
 func saveCookies(browser rod.Browser) {
 	dirname, err := os.UserHomeDir()
 	if err != nil {

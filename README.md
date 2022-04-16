@@ -20,7 +20,6 @@ aws sso login  --profile pp --no-browser | headless-sso
 ```
 
 
-
 **Note:** `headless-sso` gets the AWS user credentials from a `.netrc` file with the following format:
  > machine name has to be `headless-sso`
 
@@ -30,10 +29,8 @@ login <username>
 password <something-secret>
 ```
 
-
-### Known Issues:
+### Limitations:
 - Only works with hardware MFA/U2F - Need to read MFA code from stdin.
-- Occasional context failures - Error handling needs work
 
 ### Release Notes:
 Working but Still WiP, Contributions welcome.
