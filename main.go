@@ -110,8 +110,8 @@ func ssoLogin(url string) {
 
 // executes aws sso signin step
 func signIn(page rod.Page) {
-
 	usr, _ := user.Current()
+
 	f, _ := netrc.ParseFile(filepath.Join(usr.HomeDir, ".netrc"))
 	username := f.FindMachine("headless-sso", "").Login
 	passphrase := f.FindMachine("headless-sso", "").Password
@@ -122,11 +122,7 @@ func signIn(page rod.Page) {
 }
 
 // TODO: allow user to enter MFA Code
-// We only support u2f/hardware MFA right now
-// And if you park here, stuff just fails eventually...
 func mfa(page rod.Page) {
-
-	// we used a page.Race here before but we can't read from stdin after the initial pipe
 	log.Println("Touch U2f...")
 }
 
@@ -158,7 +154,6 @@ func saveCookies(browser rod.Browser) {
 
 	for _, cookie := range cookies {
 		if cookie.Name == "x-amz-sso_authn" {
-
 			data, _ := json.Marshal(cookie)
 
 			sEnc := b64.StdEncoding.EncodeToString([]byte(data))
@@ -167,7 +162,6 @@ func saveCookies(browser rod.Browser) {
 			if err != nil {
 				log.Panic(err)
 			}
-
 			break
 		}
 	}
