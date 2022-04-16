@@ -28,8 +28,9 @@ machine headless-sso
 login <username>
 password <something-secret>
 ```
+**Example:**
 
-[![asciicast](https://asciinema.org/a/9n7butmOUwW9oorGmTKdMeRu4.svg)](https://asciinema.org/a/9n7butmOUwW9oorGmTKdMeRu4)
+![headless-sso demo](./docs/demo.gif)
 
 ### Limitations:
 - Only works with hardware MFA/U2F - Need to read MFA code from stdin.
