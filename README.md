@@ -29,6 +29,8 @@ login <username>
 password <something-secret>
 ```
 
+[![asciicast](https://asciinema.org/a/9n7butmOUwW9oorGmTKdMeRu4.svg)](https://asciinema.org/a/9n7butmOUwW9oorGmTKdMeRu4)
+
 ### Limitations:
 - Only works with hardware MFA/U2F - Need to read MFA code from stdin.
 
