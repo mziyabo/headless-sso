@@ -17,7 +17,7 @@ jobs:
       -
         name: Set up Go
         uses: actions/setup-go@v3
-       -
+      -
         name: Import GPG key
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v4
