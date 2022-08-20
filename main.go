@@ -6,7 +6,6 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 	"errors"
-	"log"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/git-lfs/go-netrc/netrc"
+	"github.com/theckman/yacspin"
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/input"
@@ -24,19 +24,37 @@ import (
 // Time before MFA step times out
 const MFA_TIMEOUT = 30
 
+var cfg = yacspin.Config{
+	Frequency:         100 * time.Millisecond,
+	CharSet:           yacspin.CharSets[59],
+	Suffix:            "AWS SSO Signing in: ",
+	SuffixAutoColon:   false,
+	Message:           "",
+	StopCharacter:     "✓",
+	StopFailCharacter: "✗",
+	StopMessage:       "Logged in successfully",
+	StopFailMessage:   "Log in failed",
+	StopColors:        []string{"fgGreen"},
+}
+
+var spinner, _ = yacspin.New(cfg)
+
 func main() {
+	spinner.Start()
 
-	// fetch url from stdin
+	// get sso url from stdin
 	url := getURL()
-	color.Cyan(url)
-
-	// login headlessly
+	// start aws sso login
 	ssoLogin(url)
+
+	spinner.Stop()
 	time.Sleep(1 * time.Second)
 }
 
 // returns sso url from stdin.
 func getURL() string {
+	spinner.Message("reading url from stdin")
+
 	scanner := bufio.NewScanner(os.Stdin)
 	url := ""
 	for url == "" {
@@ -52,30 +70,40 @@ func getURL() string {
 	return url
 }
 
-// login with U2f MFA
+// get aws credentials from netrc file
+func getCredentials() (string, string) {
+	spinner.Message("fetching credentials from netrc")
+
+	usr, _ := user.Current()
+	f, err := netrc.ParseFile(filepath.Join(usr.HomeDir, ".netrc"))
+	if err != nil {
+		panic(".netrc file not found in HOME directory")
+	}
+
+	username := f.FindMachine("headless-sso", "").Login
+	passphrase := f.FindMachine("headless-sso", "").Password
+
+	return username, passphrase
+}
+
+// login with hardware MFA
 func ssoLogin(url string) {
-
-	browser := rod.New().
-		MustConnect().
-		Trace(false)
-
+	username, passphrase := getCredentials()
+	browser := rod.New().MustConnect().Trace(false)
 	loadCookies(*browser)
-
 	defer browser.MustClose()
 
 	err := rod.Try(func() {
-
 		page := browser.MustPage(url)
 
 		// authorize
+		spinner.Message("logging in")
 		page.MustElementR("button", "Next").MustWaitEnabled().MustPress()
-		log.Println(page.MustInfo().Title)
 
 		// sign-in
 		page.Race().ElementR("button", "Allow").MustHandle(func(e *rod.Element) {
 		}).Element("#awsui-input-0").MustHandle(func(e *rod.Element) {
-			signIn(*page)
-
+			signIn(*page, username, passphrase)
 			// mfa required step
 			mfa(*page)
 		}).MustDo()
@@ -86,7 +114,6 @@ func ssoLogin(url string) {
 
 			txt := page.Timeout(MFA_TIMEOUT * time.Second).MustElement(".awsui-util-mb-s").MustWaitLoad().MustText()
 			if txt == "Request approved" {
-				log.Println(txt)
 				unauthorized = false
 			} else {
 				exists, _, _ := page.HasR("button", "Allow")
@@ -102,35 +129,29 @@ func ssoLogin(url string) {
 	})
 
 	if errors.Is(err, context.DeadlineExceeded) {
-		log.Panic("Timeout")
+		panic("Timed out waiting for MFA")
 	} else if err != nil {
-		log.Panic(err)
+		panic(err.Error())
 	}
 }
 
 // executes aws sso signin step
-func signIn(page rod.Page) {
-	usr, _ := user.Current()
-
-	f, _ := netrc.ParseFile(filepath.Join(usr.HomeDir, ".netrc"))
-	username := f.FindMachine("headless-sso", "").Login
-	passphrase := f.FindMachine("headless-sso", "").Password
-
+func signIn(page rod.Page, username, passphrase string) {
 	page.MustElement("#awsui-input-0").MustInput(username).MustPress(input.Enter)
 	page.MustElement("#awsui-input-1").MustInput(passphrase).MustPress(input.Enter)
-	log.Println(page.MustInfo().Title)
 }
 
 // TODO: allow user to enter MFA Code
 func mfa(page rod.Page) {
-	log.Println("Touch U2f...")
+	spinner.Message(color.YellowString("Touch U2F"))
 }
 
 // load cookies
 func loadCookies(browser rod.Browser) {
+	spinner.Message("loading cookies")
 	dirname, err := os.UserHomeDir()
 	if err != nil {
-		log.Panic(err)
+		error(err.Error())
 	}
 
 	data, _ := os.ReadFile(dirname + "/.headless-sso")
@@ -147,7 +168,7 @@ func loadCookies(browser rod.Browser) {
 func saveCookies(browser rod.Browser) {
 	dirname, err := os.UserHomeDir()
 	if err != nil {
-		log.Panic(err)
+		error(err.Error())
 	}
 
 	cookies := (browser.MustGetCookies())
@@ -160,9 +181,23 @@ func saveCookies(browser rod.Browser) {
 			err = os.WriteFile(dirname+"/.headless-sso", []byte(sEnc), 0644)
 
 			if err != nil {
-				log.Panic(err)
+				error("Failed to save x-amz-sso_authn cookie")
 			}
 			break
 		}
 	}
+}
+
+// print error message and exit
+func panic(errorMsg string) {
+	red := color.New(color.FgRed).SprintFunc()
+	spinner.StopFailMessage(red("Login failed error - " + errorMsg))
+	spinner.StopFail()
+	os.Exit(1)
+}
+
+// print error message
+func error(errorMsg string) {
+	yellow := color.New(color.FgYellow).SprintFunc()
+	spinner.Message("Warn: " + yellow(errorMsg))
 }
