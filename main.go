@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/gen2brain/beeep"
 	"github.com/git-lfs/go-netrc/netrc"
 	"github.com/theckman/yacspin"
 
@@ -72,7 +73,7 @@ func getURL() string {
 
 // get aws credentials from netrc file
 func getCredentials() (string, string) {
-	spinner.Message("fetching credentials from netrc")
+	spinner.Message("fetching credentials from .netrc")
 
 	usr, _ := user.Current()
 	f, err := netrc.ParseFile(filepath.Join(usr.HomeDir, ".netrc"))
@@ -89,14 +90,17 @@ func getCredentials() (string, string) {
 // login with hardware MFA
 func ssoLogin(url string) {
 	username, passphrase := getCredentials()
+	spinner.Message(color.MagentaString("init headless-browser \n"))
+	spinner.Pause()
 	browser := rod.New().MustConnect().Trace(false)
 	loadCookies(*browser)
 	defer browser.MustClose()
-
+	
 	err := rod.Try(func() {
 		page := browser.MustPage(url)
-
+		
 		// authorize
+		spinner.Unpause()
 		spinner.Message("logging in")
 		page.MustElementR("button", "Next").MustWaitEnabled().MustPress()
 
@@ -143,6 +147,9 @@ func signIn(page rod.Page, username, passphrase string) {
 
 // TODO: allow user to enter MFA Code
 func mfa(page rod.Page) {
+	_ = beeep.Notify("headless-sso", "Touch U2F device to proceed with authenticating AWS SSO", "")
+	_ = beeep.Beep(beeep.DefaultFreq, beeep.DefaultDuration)
+
 	spinner.Message(color.YellowString("Touch U2F"))
 }
 
