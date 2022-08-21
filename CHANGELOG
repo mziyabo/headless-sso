@@ -1,0 +1,6 @@
+## 0.2.0 2022-22-08
+- Enhancement: Added beep and desktop notification on MFA step
+- Enhancement: improve logging output of initial headless browser download
+
+## 0.1.0 2022-21-08
+- Initial release
