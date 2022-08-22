@@ -10,16 +10,10 @@ We want to avoid leaving the terminal and opening yet another tab and having to 
 ### Install
 
 To download the latest release, run:
+> For ARM systems, please change ARCH to `arm64`
 
 ``` sh
  curl --silent --location https://github.com/mziyabo/headless-sso/releases/latest/download/headless-sso_0.2.0_$(uname -s)_x86_64.tar.gz | tar xz -C /tmp/
- sudo mv /tmp/headless-sso /usr/local/bin
-```
-
-For ARM systems, please change ARCH e.g.:
-
-``` sh
- curl --silent --location https://github.com/mziyabo/headless-sso/releases/latest/download/headless-sso_0.2.0_$(uname -s)_arm64.tar.gz | tar xz -C /tmp/
  sudo mv /tmp/headless-sso /usr/local/bin
 ```
 
@@ -29,10 +23,7 @@ Alternatively:
 go install github.com/mziyabo/headless-sso@latest
 ```
 
-Windows:
-
-- Download latest Windows binary from the [Releases Page](https://github.com/mziyabo/headless-sso/releases)
-- Unzip to location in PATH
+**Windows**: Download latest Windows binary from the [Releases Page](https://github.com/mziyabo/headless-sso/releases) and unzip to location in PATH
 
 ### Usage:
 
