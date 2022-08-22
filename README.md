@@ -16,7 +16,7 @@ To download the latest release, run:
  sudo mv /tmp/headless-sso /usr/local/bin
 ```
 
-For ARM system, please change ARCH (e.g. armv6, armv7 or arm64) accordingly
+For ARM systems, please change ARCH e.g.:
 
 ``` sh
  curl --silent --location https://github.com/mziyabo/headless-sso/releases/latest/download/headless-sso_0.2.0_$(uname -s)_arm64.tar.gz | tar xz -C /tmp/
@@ -31,7 +31,7 @@ go install github.com/mziyabo/headless-sso@latest
 
 Windows:
 
-- Download https://github.com/mziyabo/headless-sso/releases/latest/download/headless-sso_0.2.0_Windows_x86_64.tar.gz
+- Download latest Windows binary from the [Releases Page](https://github.com/mziyabo/headless-sso/releases)
 - Unzip to location in PATH
 
 ### Usage:
